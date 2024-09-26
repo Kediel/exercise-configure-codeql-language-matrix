@@ -13,18 +13,32 @@ jobs:
       actions: read
       contents: read
       
+  create-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.languages }}
+    steps:
+      - name: Get languages from repo
+        id: set-matrix
+        uses: advanced-security/set-codeql-language-matrix@v1
+        with:
+          access-token: ${{ secrets.GITHUB_TOKEN }}
+          endpoint: ${{ github.event.repository.languages_url }}
+          
+  analyze:
+    needs: create-matrix
+    if: ${{ needs.create-matrix.outputs.matrix != '[]' }}
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
     strategy:
-      matrix:
-        include:
-          # Analyzes C and C++ code using the commands in `Build C and C++ code`
-          - language: c-cpp
-            build-mode: manual
-          # Analyzes swift code by automatically detecting a build
-          - language: swift
-            build-mode: autobuild
-          # Analyzes Go code directly from the codebase without a build
-          - language: go
-            build-mode: autobuild
+      fail-fast: false
+      matrix: 
+        language: ${{ fromJSON(needs.create-matrix.outputs.matrix) }}
         
     steps:
       - name: Checkout repository
