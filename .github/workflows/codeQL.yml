@@ -13,25 +13,27 @@ jobs:
       actions: read
       contents: read
       
-  analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
-    permissions:
-      # required for all workflows
-      security-events: write
-      actions: read
-      contents: read
     strategy:
-      fail-fast: false
       matrix:
-        language: ['python', 'swift', 'go']
-    
+        include:
+          # Analyzes C and C++ code using the commands in `Build C and C++ code`
+          - language: c-cpp
+            build-mode: manual
+          # Analyzes swift code by automatically detecting a build
+          - language: swift
+            build-mode: autobuild
+          # Analyzes Go code directly from the codebase without a build
+          - language: go
+            build-mode: autobuild
+        
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
+        with:
+          languages: ${{ matrix.language }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
